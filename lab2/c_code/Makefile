@@ -3,7 +3,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
 TARGET = aes_test
-OUTPUTS = ciphertextout*.txt plaintextout*.txt ciphertextin.txt
+OUTPUTS = Ciphertextout*.txt plaintextout*.txt 
 
 all: $(TARGET) run
 
