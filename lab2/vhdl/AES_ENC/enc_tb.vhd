@@ -57,35 +57,35 @@ architecture behavior of test_enc is
 
 	type test_case_array is array (natural range <>) of test_case;
 	constant test_cases : test_case_array := (
-		-- Test Case 1 (Byte-reversed from C files)
+		-- Test Case 1 (Reversed from C version)
 		(
-			key        => x"3c4fcf098815f7aba6d2ae2816157e2b",
-			plaintext  => x"217362614c2d534541202c6f6c656848",
-			ciphertext => x"548c8502a3544dc8edde78165babad17"
+			key        => x"3c4fcf098815f7aba6d2ae2816157e2b",  -- C key1 reversed
+			plaintext  => x"217362614c2d534541202c6f6c656848",  -- Plaintext1 reversed
+			ciphertext => x"548c8502a3544dc8edde78165babad17"   -- Ciphertext1 reversed
 		),
 		-- Test Case 2
 		(
-			key        => x"1807f6e5d4c3d2a6abf7158809cf4f3c",
-			plaintext  => x"61746164207275756f79206563726553",
-			ciphertext => x"c9c0b98a07cd7f6b8c9b7f73cdf19b60"
+			key        => x"1807f6e5d4c3d2a6abf7158809cf4f3c",  -- C key2 reversed
+			plaintext  => x"61746164207275756f79206563726553",  -- Plaintext2 reversed
+			ciphertext => x"c9c0b98a07cd7f6b8c9b7f73cdf19b60"   -- Ciphertext2 reversed
 		),
 		-- Test Case 3
 		(
-			key        => x"ffeeddccbbaa99887766554433221100",
-			plaintext  => x"21216e6f6974707972636e6520534541",
-			ciphertext => x"dba0d3751fd5b9edbfd74df4f4e0f3af"
+			key        => x"ffeeddccbbaa99887766554433221100",  -- C key3 reversed
+			plaintext  => x"21216e6f6974707972636e6520534541",  -- Plaintext3 reversed
+			ciphertext => x"dba0d3751fd5b9edbfd74df4f4e0f3af"   -- Ciphertext3 reversed
 		),
-		-- Test Case 4
+		-- Test Case 4 (Fixed length)
 		(
-			key        => x"00112233445566778899aabbccddeeff",
-			plaintext  => x"3433323179686172676f7470797243",
-			ciphertext => x"6d5303da9b91f6350333c3d9c1ad95be"
+			key        => x"00ffeeddccbbaa998877665544332211",  -- C key4 reversed
+			plaintext  => x"343332317968706172676f7470797243",  -- Plaintext4 reversed (full 16 bytes)
+			ciphertext => x"6d5303da9b91f6350333c3d9c1ad95be"   -- Ciphertext4 reversed
 		),
 		-- Test Case 5
 		(
-			key        => x"99887766554433221100ffeeddccbbaa",
-			plaintext  => x"323433206567617373656d2074736554",
-			ciphertext => x"0335ffb8c1412732ce81a6d748cb7906"
+			key        => x"99887766554433221100ffeeddccbbaa",  -- C key5 reversed
+			plaintext  => x"323433206567617373656d2074736554",  -- Plaintext5 reversed
+			ciphertext => x"0335ffb8c1412732ce81a6d748cb7906"   -- Ciphertext5 reversed
 		)
 	);
 
