@@ -65,108 +65,59 @@ begin
 	 wait for clk_period/2;
   end process;
   
-	tb_process:process
-    variable LW : line;
-	variable error: integer:=0;
-	begin
-      reset<='1';
-	  k_valid<='0';
-	  c_valid<='0';
-	  
-	  wait for 5*clk_period;
-	  reset<='0';
-	  
-	  wait for clk_period;
-	  
-	  if(ready/='1') then
-	  wait until ready='1';	  
-	  end if;
-	  k_valid<='1';
-	  key<=x"2b7e151628aed2a6abf7158809cf4f3c";
-	  
-	  wait for clk_period;
-	  k_valid<='0';
-	  
-	  --Test 1
-	  
-	  wait until ready='1';
-      --Plain text : 0x3243f6a8885a308d313198a2e0370734
-	  cipher<=x"3925841d02dc09fbdc118597196a0b32";
-	  c_valid<='1';
-	  
-	  wait for clk_period;
-	  c_valid<='0';
-	  
-	  wait until out_valid='1';
-	  wait for 1 ns;
-	  if(x"3243f6a8885a308d313198a2e0370734" /= text_out) then 
-	     write(LW,string'("Decryption Error!!!"));
-	     write(LW,string'("   Expected : 0x3243f6a8885a308d313198a2e0370734 Received : 0x"));
-		 hwrite(LW,text_out);
-	     writeline(output,LW);
-		 error:=1;
-	  end if; 
+  test_process: process
+    file key_file: text open read_mode is "Key.txt";
+    file cipher_file: text open read_mode is "Ciphertextin.txt";
+    file plaintext_file: text open read_mode is "Plaintextin.txt";
+    variable key_line, cipher_line, plaintext_line: line;
+    variable key_vec, cipher_vec, expected_vec: std_logic_vector(127 downto 0);
+    variable test_count: integer := 0;
+    variable error_count: integer := 0;
+  begin
+    reset <= '0';
+    k_valid <= '0';
+    c_valid <= '0';
+    wait for clk_period;
+    reset <= '1';
 
-	  --Test 2
-	  
-	  wait until ready='1';
-	  --Plain Text : 0x54686973206973206120736563726574
-	  cipher<=x"65bf63df7687d1c1b38eda29d416666d";
-	  c_valid<='1';
-	  
-	  wait for clk_period;
-	  c_valid<='0';
-	  
-	  wait until out_valid='1';
-	  wait for 1 ns; --Delta delay
-	  if(x"54686973206973206120736563726574" /= text_out) then 
-	     write(LW,string'("Decryption Error!!!"));
-	     write(LW,string'("   Expected : 0x54686973206973206120736563726574 Received : 0x"));
-		 hwrite(LW,text_out);
-	     writeline(output,LW);
-		 error:=1;
-	  end if; 
-	  
-	  --Test 3
-	  
-	  wait until ready='1';
-	  --Plain Text : 0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-	  cipher<=x"7e9e9ed1c91b46e545bc1c2399f7def9";
-	  c_valid<='1';
-	  
-	  wait for clk_period;
-	  c_valid<='0';
+    while not endfile(key_file) loop
+      readline(key_file, key_line);
+      hread(key_line, key_vec);
+      readline(cipher_file, cipher_line);
+      hread(cipher_line, cipher_vec);
+      readline(plaintext_file, plaintext_line);
+      hread(plaintext_line, expected_vec);
 
-	  wait until out_valid='1';
-	  wait for 1 ns;
-	  if(x"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" /= text_out) then 
-	     write(LW,string'("Decryption Error!!!"));
-	     write(LW,string'("   Expected : 0xCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC Received : 0x"));
-		 hwrite(LW,text_out);
-	     writeline(output,LW);
-		 error:=1;
-	  end if;	  
-	  
-	  if(error = 0) then
-	     write(LW,string'("********************************************"));
-		 writeline(output,LW); 	
-	     write(LW,        string'("            All test case passed!!!         "));
-		 writeline(output,LW);
-	     write(LW,string'("********************************************"));
-		 writeline(output,LW);		 
-	  else
-	    write(LW,string'("********************************************"));
-		writeline(output,LW);
-        write(LW,        string'("         Some test case failed!!!!          "));
-		writeline(output,LW);
-	    write(LW,string'("********************************************"));
-		writeline(output,LW);
-      end if;	  
-	
-      assert false report"This is end of simulation not test failure!!!" severity failure;	--End simulation
-	  
-	wait;  
-	end process;
-	
+      test_count := test_count + 1;
+      
+      wait until ready='1';
+      key <= key_vec;
+      cipher <= cipher_vec;
+      k_valid <= '1';
+      c_valid <= '1';
+      
+      wait for clk_period;
+      k_valid <= '0';
+      c_valid <= '0';
+      
+      wait until out_valid='1';
+      wait for 1 ns; -- Delta delay
+      
+      if expected_vec /= text_out then
+        report "Test case " & integer'image(test_count) & " failed!";
+        report "Expected: " & to_hstring(expected_vec);
+        report "Received: " & to_hstring(text_out);
+        error_count := error_count + 1;
+      end if;
+    end loop;
 
+    if error_count = 0 then
+      report "All " & integer'image(test_count) & " test cases passed!";
+    else
+      report integer'image(error_count) & "/" & integer'image(test_count) & " test cases failed!";
+    end if;
+    
+    assert false report "Simulation completed" severity failure;
+    wait;
+  end process;
 end beh_tb_AES_decrypt;

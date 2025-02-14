@@ -48,7 +48,47 @@ architecture behavior of test_enc is
 	
 	-- Clock period definition
 	constant clk_period : time := 10 ns;
-	
+
+	type test_case is record
+		key        : std_logic_vector(127 downto 0);
+		plaintext  : std_logic_vector(127 downto 0);
+		ciphertext : std_logic_vector(127 downto 0);
+	end record;
+
+	type test_case_array is array (natural range <>) of test_case;
+	constant test_cases : test_case_array := (
+		-- Test Case 1 (Byte-reversed from C files)
+		(
+			key        => x"3c4fcf098815f7aba6d2ae2816157e2b",
+			plaintext  => x"217362614c2d534541202c6f6c656848",
+			ciphertext => x"548c8502a3544dc8edde78165babad17"
+		),
+		-- Test Case 2
+		(
+			key        => x"1807f6e5d4c3d2a6abf7158809cf4f3c",
+			plaintext  => x"61746164207275756f79206563726553",
+			ciphertext => x"c9c0b98a07cd7f6b8c9b7f73cdf19b60"
+		),
+		-- Test Case 3
+		(
+			key        => x"ffeeddccbbaa99887766554433221100",
+			plaintext  => x"21216e6f6974707972636e6520534541",
+			ciphertext => x"dba0d3751fd5b9edbfd74df4f4e0f3af"
+		),
+		-- Test Case 4
+		(
+			key        => x"00112233445566778899aabbccddeeff",
+			plaintext  => x"3433323179686172676f7470797243",
+			ciphertext => x"6d5303da9b91f6350333c3d9c1ad95be"
+		),
+		-- Test Case 5
+		(
+			key        => x"99887766554433221100ffeeddccbbaa",
+			plaintext  => x"323433206567617373656d2074736554",
+			ciphertext => x"0335ffb8c1412732ce81a6d748cb7906"
+		)
+	);
+
 begin
 	enc_inst : aes_enc
 		port map(
@@ -68,49 +108,47 @@ begin
 		wait for clk_period/2;
 	end process clk_process;
 	
-	-- Simulation process
+	-- Modified simulation process
 	sim_proc : process is
+		variable error_count : natural := 0;
 	begin
-		-- Some test vectors taken from pages 215, and 216 of the main AES specification		
-		--p = 3243f6a8885a308d313198a2e0370734                     Plaintext 1
-		--k = 2b7e151628aed2a6abf7158809cf4f3c			   128-bit key
-		--c = 3925841d02dc09fbdc118597196a0b32                     Ciphertext 1
-		-- Initialize Inputs
-		plaintext <= x"340737e0a29831318d305a88a8f64332";
-		key <= x"3c4fcf098815f7aba6d2ae2816157e2b";
 		rst <= '0';
-		-- Hold reset state for one cycle		
-		wait for clk_period * 1;
+		wait for clk_period;
 		rst <= '1';
-		wait until done = '1';
-		wait for clk_period/2;			
-		if (ciphertext = x"320b6a19978511dcfb09dc021d842539") then
-			report "---------- Passed ----------";
+
+		for i in test_cases'range loop
+			-- Apply test case
+			plaintext <= test_cases(i).plaintext;
+			key <= test_cases(i).key;
+			
+			-- Reset sequencing from original testbench
+			rst <= '0';
+			wait for clk_period;
+			rst <= '1';
+			
+			-- Wait for completion
+			wait until done = '1';
+			wait for clk_period/2;
+			
+			-- Check result
+			if ciphertext /= test_cases(i).ciphertext then
+				report "Test case " & integer'image(i+1) & " failed!" severity error;
+				report "Expected: " & to_hstring(test_cases(i).ciphertext);
+				report "Received: " & to_hstring(ciphertext);
+				error_count := error_count + 1;
+			end if;
+			
+			wait for clk_period*2;  -- Inter-testcase delay
+		end loop;
+
+		-- Final report
+		if error_count = 0 then
+			report "All " & integer'image(test_cases'length) & " test cases passed!";
 		else
-			report "---------- Failed ----------";
+			report integer'image(error_count) & "/" & integer'image(test_cases'length) & " test cases failed!";
 		end if;
-		report "---------- Output must be: -------";
-		report "320b6a19978511dcfb09dc021d842539";		
-		--------------------------------------------
-		-- Initialize Inputs
-		--p = 54686973206973206120736563726574              	   Plaintext 2
-		--k = 2b7e151628aed2a6abf7158809cf4f3c			   128-bit key
-		--c = 65bf63df7687d1c1b38eda29d416666d	                   Ciphertext 2 		
-		plaintext <= x"74657263657320612073692073696854";
-		key <= x"3c4fcf098815f7aba6d2ae2816157e2b";
-		rst <= '0';
-		-- Hold reset state for one cycle		
-		wait for clk_period * 1;
-		rst <= '1';
-		wait until done = '1';
-		wait for clk_period/2;			
-		if (ciphertext = x"6d6616d429da8eb3c1d18776df63bf65") then
-			report "---------- Passed ----------";
-		else
-			report "---------- Failed ----------";
-		end if;
-		report "---------- Output must be: -------";
-		report "6d6616d429da8eb3c1d18776df63bf65";
+		
+		assert false report "Simulation complete" severity failure;
 		wait;
 	end process sim_proc;
 	
