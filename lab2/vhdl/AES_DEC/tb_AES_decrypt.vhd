@@ -65,59 +65,161 @@ begin
 	 wait for clk_period/2;
   end process;
   
-  test_process: process
-    file key_file: text open read_mode is "Key.txt";
-    file cipher_file: text open read_mode is "Ciphertextin.txt";
-    file plaintext_file: text open read_mode is "Plaintextin.txt";
-    variable key_line, cipher_line, plaintext_line: line;
-    variable key_vec, cipher_vec, expected_vec: std_logic_vector(127 downto 0);
-    variable test_count: integer := 0;
-    variable error_count: integer := 0;
-  begin
-    reset <= '0';
-    k_valid <= '0';
-    c_valid <= '0';
-    wait for clk_period;
-    reset <= '1';
+	tb_process:process
+    variable LW : line;
+	variable error: integer:=0;
+	begin
+      reset<='1';
+	  k_valid<='0';
+	  c_valid<='0';
+	  
+	  wait for 5*clk_period;
+	  reset<='0';
+	  
+	  wait for clk_period;
+	  
+	  if(ready/='1') then
+	  wait until ready='1';	  
+	  end if;
+	  k_valid<='1';
+	  key<=x"2b7e151628aed2a6abf7158809cf4f3c";
+	  
+	  wait for clk_period;
+	  k_valid<='0';
+	  
+	  wait until ready='1';
+	  cipher<=x"17adab5b1678deedc84d54a302858c54";
+	  c_valid<='1';
+	  
+	  wait for clk_period;
+	  c_valid<='0';
+	  
+	  wait until out_valid='1';
+	  wait for 1 ns;
+	  if(x"48656c6c6f2c204145532d4c61627321" /= text_out) then 
+	     write(LW,string'("Decryption Error!!!"));
+	     write(LW,string'("   Expected : 0x48656c6c6f2c204145532d4c61627321 Received : 0x"));
+		 hwrite(LW,text_out);
+	     writeline(output,LW);
+		 error:=1;
+	  end if; 
 
-    while not endfile(key_file) loop
-      readline(key_file, key_line);
-      hread(key_line, key_vec);
-      readline(cipher_file, cipher_line);
-      hread(cipher_line, cipher_vec);
-      readline(plaintext_file, plaintext_line);
-      hread(plaintext_line, expected_vec);
+	  -- Test 2
+	  wait until ready='1';
+	  k_valid<='1';
+	  key<=x"3c4fcf098815f7aba6d2c3d4e5f60718";
+	  wait for clk_period;
+	  k_valid<='0';
+	  
+	  wait until ready='1';
+	  cipher<=x"609bf1cd737f9b8c6b7fcd078ab9c0c9";
+	  c_valid<='1';
+	  
+	  wait for clk_period;
+	  c_valid<='0';
+	  
+	  wait until out_valid='1';
+	  wait for 1 ns;
+	  if(x"53656375726520796f75722064617461" /= text_out) then 
+	     write(LW,string'("Decryption Error!!!"));
+	     write(LW,string'("   Expected : 0x53656375726520796f75722064617461 Received : 0x"));
+		 hwrite(LW,text_out);
+	     writeline(output,LW);
+		 error:=1;
+	  end if; 
+	  
+	  -- Test 3
+	  wait until ready='1';
+	  k_valid<='1';
+	  key<=x"00112233445566778899aabbccddeeff";
+	  wait for clk_period;
+	  k_valid<='0';
+	  
+	  wait until ready='1';
+	  cipher<=x"aff3e0f4f44dd7bfedb9d51f75d3a0db";
+	  c_valid<='1';
+	  
+	  wait for clk_period;
+	  c_valid<='0';
+	  
+	  wait until out_valid='1';
+	  wait for 1 ns;
+	  if(x"41455320656e6372797074696f6e2121" /= text_out) then 
+	     write(LW,string'("Decryption Error!!!"));
+	     write(LW,string'("   Expected : 0x41455320656e6372797074696f6e2121 Received : 0x"));
+		 hwrite(LW,text_out);
+	     writeline(output,LW);
+		 error:=1;
+	  end if;	  
+	  
+	  -- Test 4
+	  wait until ready='1';
+	  k_valid<='1';
+	  key<=x"ffeeddccbbaa99887766554433221100";
+	  wait for clk_period;
+	  k_valid<='0';
+	  
+	  wait until ready='1';
+	  cipher<=x"be95adc1d9c3330335f6919bda03536d";
+	  c_valid<='1';
+	  
+	  wait for clk_period;
+	  c_valid<='0';
+	  
+	  wait until out_valid='1';
+	  wait for 1 ns;
+	  if(x"43727970746f67726170687931323334" /= text_out) then 
+	     write(LW,string'("Decryption Error!!!"));
+	     write(LW,string'("   Expected : 0x43727970746f67726170687931323334 Received : 0x"));
+		 hwrite(LW,text_out);
+	     writeline(output,LW);
+		 error:=1;
+	  end if;
 
-      test_count := test_count + 1;
-      
-      wait until ready='1';
-      key <= key_vec;
-      cipher <= cipher_vec;
-      k_valid <= '1';
-      c_valid <= '1';
-      
-      wait for clk_period;
-      k_valid <= '0';
-      c_valid <= '0';
-      
-      wait until out_valid='1';
-      wait for 1 ns; -- Delta delay
-      
-      if expected_vec /= text_out then
-        report "Test case " & integer'image(test_count) & " failed!";
-        report "Expected: " & to_hstring(expected_vec);
-        report "Received: " & to_hstring(text_out);
-        error_count := error_count + 1;
-      end if;
-    end loop;
+	  -- Test 5
+	  wait until ready='1';
+	  k_valid<='1';
+	  key<=x"aabbccddeeff00112233445566778899";
+	  wait for clk_period;
+	  k_valid<='0';
+	  
+	  wait until ready='1';
+	  cipher<=x"0679cb48d7a681ce322741c1b8ff3503";
+	  c_valid<='1';
+	  
+	  wait for clk_period;
+	  c_valid<='0';
+	  
+	  wait until out_valid='1';
+	  wait for 1 ns;
+	  if(x"54657374206d65737361676520233432" /= text_out) then 
+	     write(LW,string'("Decryption Error!!!"));
+	     write(LW,string'("   Expected : 0x54657374206d65737361676520233432 Received : 0x"));
+		 hwrite(LW,text_out);
+	     writeline(output,LW);
+		 error:=1;
+	  end if;
+	  
+	  if(error = 0) then
+	     write(LW,string'("********************************************"));
+		 writeline(output,LW); 	
+	     write(LW,        string'("            All test case passed!!!         "));
+		 writeline(output,LW);
+	     write(LW,string'("********************************************"));
+		 writeline(output,LW);		 
+	  else
+	    write(LW,string'("********************************************"));
+		writeline(output,LW);
+        write(LW,        string'("         Some test case failed!!!!          "));
+		writeline(output,LW);
+	    write(LW,string'("********************************************"));
+		writeline(output,LW);
+      end if;	  
+	
+      assert false report"This is end of simulation not test failure!!!" severity failure;	--End simulation
+	  
+	wait;  
+	end process;
+	
 
-    if error_count = 0 then
-      report "All " & integer'image(test_count) & " test cases passed!";
-    else
-      report integer'image(error_count) & "/" & integer'image(test_count) & " test cases failed!";
-    end if;
-    
-    assert false report "Simulation completed" severity failure;
-    wait;
-  end process;
 end beh_tb_AES_decrypt;
